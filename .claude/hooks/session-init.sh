@@ -23,42 +23,47 @@ if [ -d "$CLAUDE_PROJECT_DIR/.git" ]; then
     echo ""
 fi
 
-# 2. 이전 세션 요약 로드
+# 2. 프로젝트 컨텍스트 (claude/CLAUDE.md) - 가장 중요!
+if [ -f "$CLAUDE_PROJECT_DIR/claude/CLAUDE.md" ]; then
+    echo "📖 프로젝트 컨텍스트 (claude/CLAUDE.md):"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    cat "$CLAUDE_PROJECT_DIR/claude/CLAUDE.md"
+    echo ""
+fi
+
+# 3. 세션 히스토리 (claude/SESSION_HISTORY.md)
+if [ -f "$CLAUDE_PROJECT_DIR/claude/SESSION_HISTORY.md" ]; then
+    echo "📜 전체 세션 히스토리 (claude/SESSION_HISTORY.md):"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    cat "$CLAUDE_PROJECT_DIR/claude/SESSION_HISTORY.md"
+    echo ""
+fi
+
+# 4. 이전 세션 요약
 if [ -f "$CLAUDE_PROJECT_DIR/.claude/session-history/latest-summary.md" ]; then
-    echo "📋 이전 세션 요약:"
+    echo "📋 최근 세션 요약 (.claude/session-history/latest-summary.md):"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     cat "$CLAUDE_PROJECT_DIR/.claude/session-history/latest-summary.md"
     echo ""
 fi
 
-# 3. 미완료 작업 (TODO) 로드
+# 5. 미완료 작업 (TODO)
 if [ -f "$CLAUDE_PROJECT_DIR/.claude/session-history/pending-tasks.md" ]; then
-    echo "⏳ 진행 중인 작업:"
+    echo "⏳ 진행 중인 작업 (.claude/session-history/pending-tasks.md):"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     cat "$CLAUDE_PROJECT_DIR/.claude/session-history/pending-tasks.md"
     echo ""
 fi
 
-# 4. 최근 변경사항 (Git diff)
+# 6. 최근 변경사항 (Git diff)
 if [ -d "$CLAUDE_PROJECT_DIR/.git" ]; then
     UNCOMMITTED=$(git -C "$CLAUDE_PROJECT_DIR" status --porcelain 2>/dev/null | wc -l)
     if [ "$UNCOMMITTED" -gt 0 ]; then
-        echo "⚠️  커밋되지 않은 변경사항: $UNCOMMITTED 개 파일"
+        echo "⚠️  커밋되지 않은 변경사항:"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         git -C "$CLAUDE_PROJECT_DIR" status --short | head -10
         echo ""
     fi
-fi
-
-# 5. 프로젝트 컨텍스트 (claude/CLAUDE.md 존재 시)
-if [ -f "$CLAUDE_PROJECT_DIR/claude/CLAUDE.md" ]; then
-    echo "💡 프로젝트 컨텍스트는 claude/CLAUDE.md를 참고하세요"
-    echo ""
-fi
-
-# 6. 프로젝트 스펙 (PROJECT_SPEC.md 존재 시)
-if [ -f "$CLAUDE_PROJECT_DIR/PROJECT_SPEC.md" ]; then
-    echo "📄 프로젝트 명세: PROJECT_SPEC.md 참고"
-    echo ""
 fi
 
 # 7. 환경 변수 설정
@@ -69,7 +74,7 @@ if [ -n "$CLAUDE_ENV_FILE" ]; then
 fi
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "✨ 세션 준비 완료! 작업을 시작하세요."
+echo "✨ 컨텍스트 로드 완료! 다음 작업을 계속하세요."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 

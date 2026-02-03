@@ -112,9 +112,39 @@ if [ ! -f "$HISTORY_DIR/pending-tasks.md" ]; then
 EOF
 fi
 
+# 6. claude/SESSION_HISTORY.md 업데이트
+SESSION_HISTORY_FILE="$CLAUDE_PROJECT_DIR/claude/SESSION_HISTORY.md"
+if [ -f "$SESSION_HISTORY_FILE" ]; then
+    # 기존 파일이 있으면 새 세션 정보 추가
+    echo "" >> "$SESSION_HISTORY_FILE"
+    echo "---" >> "$SESSION_HISTORY_FILE"
+    echo "" >> "$SESSION_HISTORY_FILE"
+    echo "## 세션 $TIMESTAMP" >> "$SESSION_HISTORY_FILE"
+    echo "" >> "$SESSION_HISTORY_FILE"
+
+    if [ -d "$CLAUDE_PROJECT_DIR/.git" ]; then
+        echo "**브랜치:** $(git -C "$CLAUDE_PROJECT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null)" >> "$SESSION_HISTORY_FILE"
+        echo "**커밋:** $(git -C "$CLAUDE_PROJECT_DIR" log -1 --format='%h - %s' 2>/dev/null)" >> "$SESSION_HISTORY_FILE"
+        echo "" >> "$SESSION_HISTORY_FILE"
+    fi
+
+    # 작업한 파일 목록
+    if [ -d "$CLAUDE_PROJECT_DIR/.git" ]; then
+        CHANGED_FILES=$(git -C "$CLAUDE_PROJECT_DIR" diff --name-only HEAD 2>/dev/null)
+        if [ -n "$CHANGED_FILES" ]; then
+            echo "### 변경된 파일" >> "$SESSION_HISTORY_FILE"
+            echo "$CHANGED_FILES" | while read file; do
+                echo "- \`$file\`" >> "$SESSION_HISTORY_FILE"
+            done
+            echo "" >> "$SESSION_HISTORY_FILE"
+        fi
+    fi
+fi
+
 echo "✅ 세션 저장 완료!"
 echo "   - 요약: .claude/session-history/latest-summary.md"
 echo "   - 아카이브: .claude/session-history/archive-$DATE_ONLY.md"
+echo "   - 히스토리: claude/SESSION_HISTORY.md"
 echo ""
 
 exit 0
