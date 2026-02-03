@@ -1,0 +1,65 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git diff:*)",
+      "Bash(git --no-pager diff --stat HEAD)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git tag:*)",
+      "Bash(./build.sh:*)",
+      "Bash(./build.ps1:*)",
+      "Bash(docker info:*)",
+      "Bash(docker --version:*)",
+      "Bash(docker build:*)",
+      "Bash(docker run:*)",
+      "Bash(docker pull:*)",
+      "Bash(sudo docker info:*)",
+      "Bash(sudo -n docker info:*)",
+      "Bash(sudo usermod:*)",
+      "Bash(sudo systemctl status:*)",
+      "Bash(systemctl is-active:*)",
+      "Bash(systemctl status:*)",
+      "Bash(command -v shellcheck:*)",
+      "Bash(shellcheck:*)",
+      "Bash(chmod:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(grep:*)",
+      "Bash(wc:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(echo:*)",
+      "Bash(bash:*)",
+      "Bash(VERBOSE=1 ./build.sh:*)",
+      "Bash(./tests/test-*.sh:*)",
+      "Bash(python3:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)"
+    ]
+  },
+  "outputStyle": "default",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-init.sh"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-save.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

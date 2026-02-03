@@ -1,0 +1,27 @@
+OLDS/
+build.config
+out/
+*.log
+*.zip
+*.tar.gz
+
+# Build outputs
+build/
+*.uf2
+*.elf
+*.bin
+*.hex
+
+# Claude Code 세션 히스토리 (개인 작업 내역만 무시)
+.claude/session-history/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
