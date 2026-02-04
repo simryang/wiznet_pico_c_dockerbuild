@@ -1,0 +1,2 @@
+#!/bin/bash
+bash .claude/hooks/session-init.sh

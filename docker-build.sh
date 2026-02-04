@@ -53,7 +53,7 @@ log "Checking submodules..."
 if [ ! -f "/work/src/libraries/pico-sdk/CMakeLists.txt" ]; then
   die "Pico SDK submodule not initialized! Run: git submodule update --init --recursive"
 fi
-if [ ! -f "/work/src/libraries/ioLibrary_Driver/CMakeLists.txt" ]; then
+if [ ! -d "/work/src/libraries/ioLibrary_Driver/Ethernet" ]; then
   die "ioLibrary_Driver submodule not initialized!"
 fi
 if [ ! -f "/work/src/libraries/mbedtls/CMakeLists.txt" ]; then

@@ -12,6 +12,9 @@ build/
 *.bin
 *.hex
 
+# Cloned source
+WIZnet-PICO-C/
+
 # Claude Code 세션 히스토리 (개인 작업 내역만 무시)
 .claude/session-history/
 
