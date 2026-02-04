@@ -24,6 +24,11 @@ DOCKER_IMAGE="simryang/w55rp20:latest"
 BUILD_TYPE="Release"
 OUT_DIR="out"
 
+# 성능 최적화 설정
+CCACHE_DIR_HOST="${CCACHE_DIR_HOST:-$HOME/.ccache-wiznet-pico-c}"
+TMPFS_SIZE="${TMPFS_SIZE:-20g}"
+JOBS="${JOBS:-16}"
+
 # 지원 보드 목록 (BOARD_NAME)
 BOARDS=(
     "WIZnet_Ethernet_HAT"
@@ -348,16 +353,19 @@ run_docker_build() {
     log "Docker 이미지 pull 중: $DOCKER_IMAGE"
     docker pull "$DOCKER_IMAGE"
 
-    # 산출물 디렉토리 생성
-    mkdir -p "$OUT_DIR"
+    # 디렉토리 생성
+    mkdir -p "$OUT_DIR" "$CCACHE_DIR_HOST"
 
     # 절대 경로 변환
     local abs_project_dir=$(cd "$PROJECT_DIR" && pwd)
     local abs_out_dir=$(cd "$OUT_DIR" && pwd)
+    local abs_ccache_dir=$(cd "$CCACHE_DIR_HOST" && pwd)
 
     log "Docker 빌드 시작..."
     log "  소스: $abs_project_dir"
     log "  산출물: $abs_out_dir"
+    log "  ccache: $abs_ccache_dir"
+    log "  tmpfs: $TMPFS_SIZE (RAM disk)"
 
     # 시작 시간 기록
     local start_time=$(date +%s)
@@ -366,12 +374,15 @@ run_docker_build() {
     local abs_docker_build_sh=$(cd "$(dirname "$0")" && pwd)/docker-build.sh
 
     if $BUILD_ALL; then
-        # 전체 빌드
+        # 전체 빌드 (성능 최적화: tmpfs + ccache)
         docker run --rm \
             -v "$abs_project_dir:/work/src:rw" \
             -v "$abs_out_dir:/work/out:rw" \
+            -v "$abs_ccache_dir:/work/.ccache:rw" \
             -v "$abs_docker_build_sh:/docker-build.sh:ro" \
-            -e "JOBS=16" \
+            --tmpfs /work/src/build:rw,exec,size="$TMPFS_SIZE" \
+            -e "CCACHE_DIR=/work/.ccache" \
+            -e "JOBS=$JOBS" \
             -e "BUILD_TYPE=$BUILD_TYPE" \
             "$DOCKER_IMAGE" \
             bash /docker-build.sh
@@ -381,8 +392,11 @@ run_docker_build() {
         docker run --rm \
             -v "$abs_project_dir:/work/src:rw" \
             -v "$abs_out_dir:/work/out:rw" \
+            -v "$abs_ccache_dir:/work/.ccache:rw" \
             -v "$abs_docker_build_sh:/docker-build.sh:ro" \
-            -e "JOBS=16" \
+            --tmpfs /work/src/build:rw,exec,size="$TMPFS_SIZE" \
+            -e "CCACHE_DIR=/work/.ccache" \
+            -e "JOBS=$JOBS" \
             -e "BUILD_TYPE=$BUILD_TYPE" \
             "$DOCKER_IMAGE" \
             bash /docker-build.sh
@@ -435,6 +449,15 @@ clean_build() {
     if [ -d "$OUT_DIR" ]; then
         rm -rf "$OUT_DIR"
         log "제거: $OUT_DIR"
+    fi
+
+    # ccache 정리는 선택 사항 (기본적으로 유지)
+    read -p "ccache 디렉토리도 삭제할까요? [y/N]: " clean_ccache
+    if [[ "$clean_ccache" =~ ^[Yy] ]]; then
+        if [ -d "$CCACHE_DIR_HOST" ]; then
+            rm -rf "$CCACHE_DIR_HOST"
+            log "제거: $CCACHE_DIR_HOST"
+        fi
     fi
 
     log "빌드 정리 완료"
