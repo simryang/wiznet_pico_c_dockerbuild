@@ -155,6 +155,23 @@ function Write-Error-Custom {
     exit 1
 }
 
+# Windows 경로를 WSL 경로로 변환
+function ConvertTo-WSLPath {
+    param([string]$WindowsPath)
+
+    # 백슬래시를 슬래시로 변환
+    $path = $WindowsPath -replace '\\', '/'
+
+    # 드라이브 문자를 /mnt/x 형식으로 변환 (예: C:/foo -> /mnt/c/foo)
+    if ($path -match '^([A-Z]):(.*)$') {
+        $driveLetter = $matches[1].ToLower()
+        $pathPart = $matches[2]
+        return "/mnt/$driveLetter$pathPart"
+    }
+
+    return $path
+}
+
 # 도움말 표시
 function Show-Help {
     Write-Host @"
@@ -506,15 +523,15 @@ function Invoke-DockerBuild {
     New-Item -ItemType Directory -Force -Path $CcacheDirHost | Out-Null
 
     # 절대 경로 변환 (Windows 경로를 WSL 경로로 변환)
-    $absProjectDir = (Resolve-Path $ProjectDir).Path -replace '\\', '/' -replace '^([A-Z]):', { "/mnt/$($_.Groups[1].Value.ToLower())" }
-    $absOutDir = (Resolve-Path $OutDir).Path -replace '\\', '/' -replace '^([A-Z]):', { "/mnt/$($_.Groups[1].Value.ToLower())" }
-    $absCcacheDir = (Resolve-Path $CcacheDirHost).Path -replace '\\', '/' -replace '^([A-Z]):', { "/mnt/$($_.Groups[1].Value.ToLower())" }
-    $absDockerBuildSh = ((Resolve-Path "docker-build.sh").Path -replace '\\', '/' -replace '^([A-Z]):', { "/mnt/$($_.Groups[1].Value.ToLower())" })
+    $absProjectDir = ConvertTo-WSLPath (Resolve-Path $ProjectDir).Path
+    $absOutDir = ConvertTo-WSLPath (Resolve-Path $OutDir).Path
+    $absCcacheDir = ConvertTo-WSLPath (Resolve-Path $CcacheDirHost).Path
+    $absDockerBuildSh = ConvertTo-WSLPath (Resolve-Path "docker-build.sh").Path
 
     # 호스트 examples 마운트 설정
     $examplesMount = @()
     if (Test-Path $ExamplesDir) {
-        $absExamplesDir = (Resolve-Path $ExamplesDir).Path -replace '\\', '/' -replace '^([A-Z]):', { "/mnt/$($_.Groups[1].Value.ToLower())" }
+        $absExamplesDir = ConvertTo-WSLPath (Resolve-Path $ExamplesDir).Path
         $examplesMount = @("-v", "${absExamplesDir}:/work/src/examples:rw")
         Write-Log "호스트 examples 사용: $absExamplesDir"
     }
