@@ -1,19 +1,19 @@
 # WIZnet-PICO-C Docker Build System
 
-WIZnet 이더넷 보드(10종)용 C 예제(16종)를 Docker로 빌드합니다. 재빌드 시 ccache 덕분에 6초면 완료됩니다.
+WIZnet 이더넷 보드(10종)용 C 예제(16종)를 Docker로 빌드합니다. Windows, Linux, macOS 모두 지원합니다.
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)]()
 [![Docker](https://img.shields.io/badge/docker-ready-blue)]()
-[![Platform](https://img.shields.io/badge/platform-linux%20%7C%20windows%20%7C%20macos-lightgrey)]()
+[![Platform](https://img.shields.io/badge/platform-windows%20%7C%20linux%20%7C%20macos-lightgrey)]()
 
 ## 주요 특징
 
-- tmpfs + ccache로 재빌드 6초
+- **Windows 환경 지원**: PowerShell 스크립트로 간편하게 빌드
 - 10종 보드 지원 (W5100S ~ W6300, RP2040 & RP2350)
 - 16가지 예제 (HTTP, MQTT, SSL, CAN 등)
 - Docker 기반 통일된 빌드 환경
-- Windows, Linux, macOS 지원
 - 예제 코드를 호스트에서 직접 수정 가능
+- Linux 환경에서는 ccache로 재빌드 6초
 
 ---
 
@@ -138,7 +138,7 @@ WIZnet-PICO-C 저장소의 `examples` 폴더를 현재 디렉토리로 복사합
 [INFO] 호스트 examples 사용: /path/to/examples
 ```
 
-재빌드는 ccache 덕분에 6초면 끝납니다.
+Linux 환경에서는 Docker 컨테이너 내부의 ccache로 재빌드가 6초면 끝납니다. Windows는 Docker Desktop 오버헤드로 약간 더 걸립니다.
 
 ### 4. 테스트
 
@@ -191,15 +191,9 @@ code .\examples\http\
 ./build.sh --board W5500_EVB_PICO --example http --debug
 ```
 
-### 성능 조정
+### 성능 조정 (Linux/macOS)
 
-```powershell
-# Windows
-$env:CCACHE_DIR_HOST="$env:USERPROFILE\.ccache-custom"
-$env:TMPFS_SIZE="30g"
-$env:JOBS=8
-.\build.ps1 -Board W5500_EVB_PICO -All
-```
+Linux 환경에서는 tmpfs와 ccache 설정으로 빌드 속도를 향상시킬 수 있습니다.
 
 ```bash
 # Linux/macOS
@@ -207,6 +201,14 @@ export CCACHE_DIR_HOST="$HOME/.ccache-custom"
 export TMPFS_SIZE="30g"
 export JOBS=8
 ./build.sh --board W5500_EVB_PICO --all
+```
+
+Windows에서는 기본 설정을 사용하는 것을 권장합니다. 병렬 빌드 수만 조정할 수 있습니다:
+
+```powershell
+# Windows - 병렬 빌드 수 조정
+$env:JOBS=8
+.\build.ps1 -Board W5500_EVB_PICO -All
 ```
 
 ### 빌드 정리
@@ -312,12 +314,7 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 ### 빌드가 느림 (45초 이상)
 
-빌드 로그에서 tmpfs와 ccache가 활성화되었는지 확인하세요:
-
-```
-[INFO]   tmpfs: 20g (RAM disk)
-Hits: 2249 / 2250 (99.96 %)
-```
+**Windows**: Docker Desktop이 WSL2를 사용하는지 확인하세요. 설정 > General > "Use the WSL 2 based engine"을 활성화해야 합니다.
 
 병렬 빌드 수를 조정해보세요:
 
@@ -325,6 +322,13 @@ Hits: 2249 / 2250 (99.96 %)
 # Windows
 $env:JOBS=8
 .\build.ps1 -Board W5500_EVB_PICO -All
+```
+
+**Linux/macOS**: 빌드 로그에서 tmpfs와 ccache가 활성화되었는지 확인하세요:
+
+```
+[INFO]   tmpfs: 20g (RAM disk)
+Hits: 2249 / 2250 (99.96 %)
 ```
 
 ### examples 수정이 빌드에 반영되지 않음
@@ -359,11 +363,15 @@ cd ..
 
 ## 성능 벤치마크
 
+Linux 환경 기준 (Ubuntu 22.04, 16GB RAM, 8 Core):
+
 | 빌드 유형 | 시간 | 개선율 |
 |---------|------|--------|
 | 최초 빌드 (최적화 전) | 45초 | - |
 | tmpfs 적용 | 33초 | 27% ↑ |
 | tmpfs + ccache (재빌드) | 6초 | 87% ↑ |
+
+Windows 환경에서는 Docker Desktop 오버헤드로 약간 더 걸립니다.
 
 ---
 
@@ -375,7 +383,7 @@ cd ..
 | 빌드 시스템 | CMake 3.28 + Ninja |
 | 컴파일러 | ARM GNU Toolchain 14.2 |
 | SDK | Raspberry Pi Pico SDK (서브모듈) |
-| 성능 최적화 | tmpfs (RAM disk) + ccache |
+| 성능 최적화 | tmpfs + ccache (Linux 컨테이너 내부) |
 
 ---
 
@@ -400,7 +408,7 @@ MIT License
 - [x] docker-build.sh 작성
 - [x] build.sh 작성 (Linux/macOS)
 - [x] build.ps1 작성 (Windows)
-- [x] 성능 최적화 (tmpfs + ccache)
+- [x] Linux 환경 성능 최적화 (tmpfs + ccache)
 - [x] examples 호스트 복사 기능
 - [x] 테스트 빌드 (W5500-EVB-Pico)
 - [x] README 문서화
