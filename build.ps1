@@ -36,7 +36,7 @@ param(
 
     [Parameter(HelpMessage="디버그 빌드")]
     [Alias("d")]
-    [switch]$Debug,
+    [switch]$DebugBuild,
 
     [Parameter(HelpMessage="빌드 정리")]
     [Alias("c")]
@@ -61,7 +61,7 @@ $Version = "1.0.0"
 $RepoUrl = "https://github.com/WIZnet-ioNIC/WIZnet-PICO-C.git"
 $ProjectDir = "WIZnet-PICO-C"
 $DockerImage = "simryang/w55rp20:latest"
-$BuildTypeValue = if ($Debug) { "Debug" } else { "Release" }
+$BuildTypeValue = if ($DebugBuild) { "Debug" } else { "Release" }
 $OutDir = "out"
 $ExamplesDir = "examples"
 
@@ -173,7 +173,7 @@ WIZnet-PICO-C Docker Build System v$Version
     -Board, -b BOARD_NAME         보드 지정 (예: W5500_EVB_PICO)
     -Example, -e EXAMPLE          예제 지정 (예: http)
     -All, -a                      전체 예제 빌드 (16개)
-    -Debug, -d                    디버그 빌드 (기본: Release)
+    -DebugBuild, -d               디버그 빌드 (기본: Release)
     -Clean, -c                    빌드 정리
     -InitExamples                 examples 폴더를 호스트로 복사 (최초 1회)
 
