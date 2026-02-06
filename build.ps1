@@ -1,4 +1,4 @@
-#!/usr/bin/env pwsh
+﻿#!/usr/bin/env pwsh
 # -----------------------------------------------------------------------------
 # build.ps1 - WIZnet-PICO-C Docker Build System (Windows)
 #
