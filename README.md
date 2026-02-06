@@ -6,28 +6,28 @@
 [![Docker](https://img.shields.io/badge/docker-ready-blue)]()
 [![Platform](https://img.shields.io/badge/platform-linux%20%7C%20windows%20%7C%20macos-lightgrey)]()
 
-## ✨ 주요 특징
+## 주요 특징
 
-- 🚀 **초고속 빌드**: tmpfs + ccache로 6초 완성 (재빌드 기준)
-- 🎯 **10종 보드 지원**: W5100S ~ W6300, RP2040 & RP2350
-- 📦 **16가지 예제**: HTTP, MQTT, SSL, CAN 등
-- 🐳 **Docker 기반**: 의존성 걱정 없는 통일된 환경
-- 💻 **크로스 플랫폼**: Windows, Linux, macOS 모두 지원
-- ✏️ **간편한 수정**: 예제 코드를 호스트에서 직접 수정 가능
-
----
-
-## 📖 목차
-
-1. [빠른 시작 (처음 사용자)](#-빠른-시작-처음-사용자)
-2. [예제 코드 수정하기](#-예제-코드-수정하기)
-3. [더 많은 사용법](#-더-많은-사용법)
-4. [지원 하드웨어 & 예제](#-지원-하드웨어--예제)
-5. [문제 해결](#-문제-해결)
+- tmpfs + ccache로 재빌드 6초
+- 10종 보드 지원 (W5100S ~ W6300, RP2040 & RP2350)
+- 16가지 예제 (HTTP, MQTT, SSL, CAN 등)
+- Docker 기반 통일된 빌드 환경
+- Windows, Linux, macOS 지원
+- 예제 코드를 호스트에서 직접 수정 가능
 
 ---
 
-## 🚀 빠른 시작 (처음 사용자)
+## 목차
+
+1. [빠른 시작](#빠른-시작-처음-사용자)
+2. [예제 코드 수정하기](#예제-코드-수정하기)
+3. [더 많은 사용법](#더-많은-사용법)
+4. [지원 하드웨어 & 예제](#지원-하드웨어--예제)
+5. [문제 해결](#문제-해결)
+
+---
+
+## 빠른 시작 (처음 사용자)
 
 > 예제를 수정하지 않고, 기본 예제를 빌드하려는 경우
 
@@ -118,9 +118,9 @@ cd wiznet-pico-c-docker
 
 ---
 
-## 📝 예제 코드 수정하기
+## 예제 코드 수정하기
 
-> **이 섹션은 예제 코드를 직접 수정하고 싶은 경우입니다.**
+> 예제 코드를 직접 수정하고 싶은 경우
 
 ### 왜 이 방법을 사용하나요?
 
@@ -146,15 +146,12 @@ cd wiznet-pico-c-docker
 ```
 [INFO] examples 폴더 초기화 중...
 [INFO] examples 폴더 복사 중: WIZnet-PICO-C\examples -> examples
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ examples 폴더 초기화 완료!
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-이제 다음과 같이 사용할 수 있습니다:
-  1. 예제 수정:
-     notepad .\examples\http\w5x00_http_server.c
-  2. 빌드:
-     .\build.ps1 -b W5500_EVB_PICO -a
+examples 폴더 초기화 완료!
+
+다음 단계:
+  1. 예제 수정: notepad .\examples\http\w5x00_http_server.c
+  2. 빌드: .\build.ps1 -b W5500_EVB_PICO -a
 ```
 
 ---
@@ -203,12 +200,10 @@ cd wiznet-pico-c-docker
 [INFO] 호스트 examples 사용: C:/Users/yourname/wiznet-pico-c-docker/examples
 [INFO] Docker 빌드 시작...
 ...
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ 빌드 성공! (소요 시간: 0분 6초)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+빌드 성공! (소요 시간: 0분 6초)
 ```
 
-> **⚡ 성능**: 재빌드 시 ccache 덕분에 6초만에 완료!
+재빌드 시 ccache 덕분에 6초만에 완료됩니다.
 
 ---
 
@@ -227,7 +222,7 @@ cd wiznet-pico-c-docker
 2. 보드 IP 확인 (예: `192.168.1.100`)
 3. 웹 브라우저에서 접속:
    - 변경 전: `http://192.168.1.100:80`
-   - **변경 후: `http://192.168.1.100:8080`** ✅
+   - 변경 후: `http://192.168.1.100:8080`
 
 ---
 
@@ -296,7 +291,7 @@ screen /dev/ttyACM0 115200
 
 ---
 
-## 💡 더 많은 사용법
+## 더 많은 사용법
 
 ### 특정 예제만 빌드
 
@@ -375,7 +370,7 @@ export JOBS=8
 
 ---
 
-## 🎯 지원 하드웨어 & 예제
+## 지원 하드웨어 & 예제
 
 ### 지원 보드 (10종)
 
@@ -385,7 +380,7 @@ export JOBS=8
 |------|----------|-----------|
 | WIZnet Ethernet HAT | W5100S | `WIZnet_Ethernet_HAT` |
 | W5100S-EVB-Pico | W5100S | `W5100S_EVB_PICO` |
-| **W5500-EVB-Pico** ⭐ | W5500 | `W5500_EVB_PICO` |
+| W5500-EVB-Pico (권장) | W5500 | `W5500_EVB_PICO` |
 | W55RP20-EVB-Pico | W55RP20 | `W55RP20_EVB_PICO` |
 | W6100-EVB-Pico | W6100 | `W6100_EVB_PICO` |
 | W6300-EVB-Pico | W6300 | `W6300_EVB_PICO` |
@@ -404,32 +399,32 @@ export JOBS=8
 ### 지원 예제 (16종)
 
 #### 기본 네트워킹 (4개)
-- `loopback` - 루프백 테스트 ⭐
-- `udp` - UDP 통신 ⭐
-- `http` - HTTP 서버 ⭐⭐
-- `tcp_server_multi_socket` - 다중 소켓 서버 ⭐⭐⭐
+- `loopback` - 루프백 테스트
+- `udp` - UDP 통신
+- `http` - HTTP 서버
+- `tcp_server_multi_socket` - 다중 소켓 서버
 
 #### 프로토콜 (7개)
-- `dhcp_dns` - DHCP & DNS ⭐⭐
-- `sntp` - 시간 동기화 ⭐⭐
-- `mqtt` - MQTT Pub/Sub ⭐⭐
-- `tftp` - TFTP 파일 전송 ⭐⭐
-- `netbios` - NetBIOS 이름 해석 ⭐⭐⭐
-- `pppoe` - PPPoE 연결 ⭐⭐⭐
-- `upnp` - UPnP 프로토콜 ⭐⭐⭐
+- `dhcp_dns` - DHCP & DNS
+- `sntp` - 시간 동기화
+- `mqtt` - MQTT Pub/Sub
+- `tftp` - TFTP 파일 전송
+- `netbios` - NetBIOS 이름 해석
+- `pppoe` - PPPoE 연결
+- `upnp` - UPnP 프로토콜
 
 #### 보안 통신 (2개)
-- `tcp_client_over_ssl` - SSL/TLS 클라이언트 ⭐⭐⭐
-- `tcp_server_over_ssl` - SSL/TLS 서버 ⭐⭐⭐
+- `tcp_client_over_ssl` - SSL/TLS 클라이언트
+- `tcp_server_over_ssl` - SSL/TLS 서버
 
 #### 고급 기능 (3개)
-- `udp_multicast` - 멀티캐스트 ⭐⭐⭐
-- `can` - CAN 통신 ⭐⭐⭐
-- `network_install` - 네트워크 설치 ⭐⭐⭐
+- `udp_multicast` - 멀티캐스트
+- `can` - CAN 통신
+- `network_install` - 네트워크 설치
 
 ---
 
-## 🐛 문제 해결
+## 문제 해결
 
 ### Docker 관련
 
@@ -573,7 +568,7 @@ cd ..
 
 ---
 
-## 📊 성능 벤치마크
+## 성능 벤치마크
 
 | 빌드 유형 | 시간 | 개선율 |
 |---------|------|--------|
@@ -583,7 +578,7 @@ cd ..
 
 ---
 
-## 🔧 기술 스택
+## 기술 스택
 
 | 구성 요소 | 버전/기술 |
 |---------|----------|
@@ -595,7 +590,7 @@ cd ..
 
 ---
 
-## 📚 참고 자료
+## 참고 자료
 
 - **WIZnet-PICO-C 공식 저장소**: https://github.com/WIZnet-ioNIC/WIZnet-PICO-C
 - **Pico SDK 문서**: https://www.raspberrypi.com/documentation/pico-sdk/
@@ -603,7 +598,7 @@ cd ..
 
 ---
 
-## 📝 라이선스
+## 라이선스
 
 MIT License - 자유롭게 사용하세요!
 
@@ -626,5 +621,3 @@ MIT License - 자유롭게 사용하세요!
 ---
 
 **최종 업데이트:** 2026-02-06
-
-⭐ **이 프로젝트가 유용했다면 Star를 눌러주세요!**
