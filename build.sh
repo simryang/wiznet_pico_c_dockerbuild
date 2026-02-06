@@ -23,6 +23,7 @@ PROJECT_DIR="WIZnet-PICO-C"
 DOCKER_IMAGE="simryang/w55rp20:latest"
 BUILD_TYPE="Release"
 OUT_DIR="out"
+EXAMPLES_DIR="examples"
 
 # 성능 최적화 설정
 CCACHE_DIR_HOST="${CCACHE_DIR_HOST:-$HOME/.ccache-wiznet-pico-c}"
@@ -111,20 +112,45 @@ WIZnet-PICO-C Docker Build System v${VERSION}
   ./build.sh [옵션]
 
 옵션:
-  -i, --interactive              Interactive 모드 (초보자 권장)
-  -b, --board BOARD_NAME         보드 지정 (예: W5500_EVB_PICO)
-  -e, --example EXAMPLE          예제 지정 (예: http)
-  -a, --all                      전체 예제 빌드 (16개)
-  -d, --debug                    디버그 빌드 (기본: Release)
-  -c, --clean                    빌드 정리
-  -h, --help                     이 도움말 표시
+  프로젝트:
+    -i, --interactive              Interactive 모드 (초보자 권장)
+    -p, --project PATH             사용자 프로젝트 경로 지정
+                                   (기본: WIZnet-PICO-C 자동 클론)
+
+  빌드:
+    -b, --board BOARD_NAME         보드 지정 (예: W5500_EVB_PICO)
+    -e, --example EXAMPLE          예제 지정 (예: http)
+    -a, --all                      전체 예제 빌드 (16개)
+    -d, --debug                    디버그 빌드 (기본: Release)
+    -c, --clean                    빌드 정리
+    --init-examples                examples 폴더를 호스트로 복사 (최초 1회)
+
+  도움말:
+    -h, --help                     이 도움말 표시
 
 예시:
-  ./build.sh -i                                # Interactive 모드
-  ./build.sh -b W5500_EVB_PICO -a              # 전체 빌드
-  ./build.sh -b W5500_EVB_PICO -e http         # HTTP 예제만
-  ./build.sh -b W5500_EVB_PICO -e "http mqtt"  # 여러 예제
-  ./build.sh -c                                # 빌드 정리
+  # Interactive 모드
+  ./build.sh -i
+
+  # 전체 빌드
+  ./build.sh -b W5500_EVB_PICO -a
+
+  # 특정 예제만 빌드
+  ./build.sh -b W5500_EVB_PICO -e http
+
+  # 여러 예제 빌드
+  ./build.sh -b W5500_EVB_PICO -e "http mqtt"
+
+  # 사용자 프로젝트 빌드
+  ./build.sh -p ~/my-wiznet-project -b W5500_EVB_PICO -a
+
+  # examples를 호스트로 복사 후 수정하여 빌드
+  ./build.sh --init-examples        # 최초 1회 (examples 복사)
+  # (./examples/http/ 등을 수정)
+  ./build.sh -b W5500_EVB_PICO -a  # 수정된 examples로 빌드
+
+  # 빌드 정리
+  ./build.sh -c
 
 지원 보드 (10종):
   WIZnet_Ethernet_HAT, W5100S_EVB_PICO, W5500_EVB_PICO,
@@ -137,6 +163,36 @@ WIZnet-PICO-C Docker Build System v${VERSION}
   dhcp_dns, sntp, mqtt, tftp, netbios, pppoe, upnp,
   tcp_client_over_ssl, tcp_server_over_ssl,
   udp_multicast, can, network_install
+
+사용자 프로젝트 요구사항:
+  프로젝트 디렉토리는 다음 구조를 따라야 합니다:
+    your-project/
+    ├── CMakeLists.txt
+    ├── libraries/              (서브모듈 필수)
+    │   ├── pico-sdk/
+    │   ├── ioLibrary_Driver/
+    │   └── mbedtls/
+    └── examples/
+        ├── http/
+        ├── mqtt/
+        └── ...
+
+  WIZnet-PICO-C를 포크하거나 클론한 후 수정하여 사용하세요:
+    git clone --recurse-submodules https://github.com/WIZnet-ioNIC/WIZnet-PICO-C.git
+
+examples 호스트 복사 워크플로우:
+  더 간단한 방법으로, examples만 호스트에서 관리할 수 있습니다:
+
+  1. examples 복사:
+     ./build.sh --init-examples
+
+  2. 예제 수정:
+     vi ./examples/http/w5x00_http_server.c
+
+  3. 빌드 (자동으로 수정된 examples 사용):
+     ./build.sh -b W5500_EVB_PICO -a
+
+  이 방법은 서브모듈 관리가 필요 없어 더 간편합니다.
 EOF
 }
 
@@ -284,36 +340,67 @@ check_docker() {
     fi
 }
 
-# WIZnet-PICO-C 저장소 클론
-clone_repo() {
-    if [ -d "$PROJECT_DIR" ]; then
-        log "기존 프로젝트 디렉토리 발견: $PROJECT_DIR"
-        log "서브모듈 업데이트 확인 중..."
-        cd "$PROJECT_DIR"
-        git submodule update --init --recursive
-        cd ..
+# WIZnet-PICO-C 저장소 클론 또는 사용자 프로젝트 검증
+clone_or_validate_project() {
+    if [ -n "$USER_PROJECT" ]; then
+        # 사용자 프로젝트 사용
+        log "사용자 프로젝트 사용: $USER_PROJECT"
+
+        if [ ! -d "$USER_PROJECT" ]; then
+            error "프로젝트 디렉토리가 존재하지 않습니다: $USER_PROJECT"
+        fi
+
+        PROJECT_DIR="$USER_PROJECT"
+
+        # 필수 파일 확인
+        if [ ! -f "$PROJECT_DIR/CMakeLists.txt" ]; then
+            error "CMakeLists.txt를 찾을 수 없습니다: $PROJECT_DIR"
+        fi
+
+        # 서브모듈 확인
+        log "서브모듈 검증 중..."
+        if [ ! -f "$PROJECT_DIR/libraries/pico-sdk/CMakeLists.txt" ]; then
+            error "Pico SDK 서브모듈이 초기화되지 않았습니다!\n\n다음 명령으로 서브모듈을 초기화하세요:\n  cd $PROJECT_DIR\n  git submodule update --init --recursive"
+        fi
+        if [ ! -d "$PROJECT_DIR/libraries/ioLibrary_Driver/Ethernet" ]; then
+            error "ioLibrary_Driver 서브모듈이 초기화되지 않았습니다!\n\n다음 명령으로 서브모듈을 초기화하세요:\n  cd $PROJECT_DIR\n  git submodule update --init --recursive"
+        fi
+        if [ ! -f "$PROJECT_DIR/libraries/mbedtls/CMakeLists.txt" ]; then
+            error "mbedtls 서브모듈이 초기화되지 않았습니다!\n\n다음 명령으로 서브모듈을 초기화하세요:\n  cd $PROJECT_DIR\n  git submodule update --init --recursive"
+        fi
+
+        log "사용자 프로젝트 검증 완료"
     else
-        log "WIZnet-PICO-C 저장소 클론 중..."
-        git clone --recurse-submodules "$REPO_URL" "$PROJECT_DIR"
+        # 기본 동작: WIZnet-PICO-C 클론
+        if [ -d "$PROJECT_DIR" ]; then
+            log "기존 프로젝트 디렉토리 발견: $PROJECT_DIR"
+            log "서브모듈 업데이트 확인 중..."
+            cd "$PROJECT_DIR"
+            git submodule update --init --recursive
+            cd ..
+        else
+            log "WIZnet-PICO-C 저장소 클론 중..."
+            git clone --recurse-submodules "$REPO_URL" "$PROJECT_DIR"
 
-        # 서브모듈 완전 초기화 보장
-        log "서브모듈 초기화 중..."
-        cd "$PROJECT_DIR"
-        git submodule update --init --recursive
-        cd ..
-    fi
+            # 서브모듈 완전 초기화 보장
+            log "서브모듈 초기화 중..."
+            cd "$PROJECT_DIR"
+            git submodule update --init --recursive
+            cd ..
+        fi
 
-    # 서브모듈 초기화 확인
-    if [ ! -f "$PROJECT_DIR/libraries/pico-sdk/CMakeLists.txt" ]; then
-        error "Pico SDK 서브모듈이 초기화되지 않았습니다!"
+        # 서브모듈 초기화 확인
+        if [ ! -f "$PROJECT_DIR/libraries/pico-sdk/CMakeLists.txt" ]; then
+            error "Pico SDK 서브모듈이 초기화되지 않았습니다!"
+        fi
+        if [ ! -d "$PROJECT_DIR/libraries/ioLibrary_Driver/Ethernet" ]; then
+            error "ioLibrary_Driver 서브모듈이 초기화되지 않았습니다!"
+        fi
+        if [ ! -f "$PROJECT_DIR/libraries/mbedtls/CMakeLists.txt" ]; then
+            error "mbedtls 서브모듈이 초기화되지 않았습니다!"
+        fi
+        log "서브모듈 초기화 완료"
     fi
-    if [ ! -d "$PROJECT_DIR/libraries/ioLibrary_Driver/Ethernet" ]; then
-        error "ioLibrary_Driver 서브모듈이 초기화되지 않았습니다!"
-    fi
-    if [ ! -f "$PROJECT_DIR/libraries/mbedtls/CMakeLists.txt" ]; then
-        error "mbedtls 서브모듈이 초기화되지 않았습니다!"
-    fi
-    log "서브모듈 초기화 완료"
 }
 
 # CMakeLists.txt 수정 (BOARD_NAME 설정)
@@ -361,6 +448,14 @@ run_docker_build() {
     local abs_out_dir=$(cd "$OUT_DIR" && pwd)
     local abs_ccache_dir=$(cd "$CCACHE_DIR_HOST" && pwd)
 
+    # 호스트 examples 마운트 설정
+    local examples_mount=""
+    if [ -d "$EXAMPLES_DIR" ]; then
+        local abs_examples_dir=$(cd "$EXAMPLES_DIR" && pwd)
+        examples_mount="-v $abs_examples_dir:/work/src/examples:rw"
+        log "호스트 examples 사용: $abs_examples_dir"
+    fi
+
     log "Docker 빌드 시작..."
     log "  소스: $abs_project_dir"
     log "  산출물: $abs_out_dir"
@@ -380,6 +475,7 @@ run_docker_build() {
             -v "$abs_out_dir:/work/out:rw" \
             -v "$abs_ccache_dir:/work/.ccache:rw" \
             -v "$abs_docker_build_sh:/docker-build.sh:ro" \
+            $examples_mount \
             --tmpfs /work/src/build:rw,exec,size="$TMPFS_SIZE" \
             -e "CCACHE_DIR=/work/.ccache" \
             -e "JOBS=$JOBS" \
@@ -394,6 +490,7 @@ run_docker_build() {
             -v "$abs_out_dir:/work/out:rw" \
             -v "$abs_ccache_dir:/work/.ccache:rw" \
             -v "$abs_docker_build_sh:/docker-build.sh:ro" \
+            $examples_mount \
             --tmpfs /work/src/build:rw,exec,size="$TMPFS_SIZE" \
             -e "CCACHE_DIR=/work/.ccache" \
             -e "JOBS=$JOBS" \
@@ -429,6 +526,53 @@ run_docker_build() {
     echo "  2. BOOTSEL 버튼을 누른 채 RESET 버튼 클릭"
     echo "  3. $abs_out_dir/*.uf2를 드래그앤드롭"
     echo "  4. 시리얼 터미널로 로그 확인 (115200 baud)"
+    echo ""
+}
+
+# examples 폴더 초기화 (호스트로 복사)
+init_examples() {
+    log "examples 폴더 초기화 중..."
+
+    # WIZnet-PICO-C가 없으면 먼저 클론
+    if [ ! -d "$PROJECT_DIR" ]; then
+        log "WIZnet-PICO-C 저장소 클론 중..."
+        git clone --recurse-submodules "$REPO_URL" "$PROJECT_DIR"
+    fi
+
+    # examples 폴더 확인
+    if [ ! -d "$PROJECT_DIR/examples" ]; then
+        error "$PROJECT_DIR/examples 폴더를 찾을 수 없습니다!"
+    fi
+
+    # 호스트 examples 폴더가 이미 있는지 확인
+    if [ -d "$EXAMPLES_DIR" ]; then
+        warn "호스트 examples 폴더가 이미 존재합니다: $EXAMPLES_DIR"
+        read -p "덮어쓸까요? [y/N]: " overwrite
+        if [[ ! "$overwrite" =~ ^[Yy] ]]; then
+            log "초기화를 취소했습니다."
+            exit 0
+        fi
+        rm -rf "$EXAMPLES_DIR"
+    fi
+
+    # examples 복사
+    log "examples 폴더 복사 중: $PROJECT_DIR/examples -> $EXAMPLES_DIR"
+    cp -r "$PROJECT_DIR/examples" "$EXAMPLES_DIR"
+
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "✅ examples 폴더 초기화 완료!"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "이제 다음과 같이 사용할 수 있습니다:"
+    echo ""
+    echo "  1. 예제 수정:"
+    echo "     vi $EXAMPLES_DIR/http/w5x00_http_server.c"
+    echo ""
+    echo "  2. 빌드 (자동으로 수정된 examples 사용):"
+    echo "     ./build.sh -b W5500_EVB_PICO -a"
+    echo ""
+    echo "  3. 빌드 시 호스트의 $EXAMPLES_DIR가 자동으로 마운트됩니다."
     echo ""
 }
 
@@ -471,12 +615,18 @@ main() {
     SELECTED_EXAMPLES=()
     BUILD_ALL=false
     CLEAN=false
+    USER_PROJECT=""
+    INIT_EXAMPLES=false
 
     while [[ $# -gt 0 ]]; do
         case $1 in
             -i|--interactive)
                 INTERACTIVE=true
                 shift
+                ;;
+            -p|--project)
+                USER_PROJECT="$2"
+                shift 2
                 ;;
             -b|--board)
                 SELECTED_BOARD="$2"
@@ -499,6 +649,10 @@ main() {
                 CLEAN=true
                 shift
                 ;;
+            --init-examples)
+                INIT_EXAMPLES=true
+                shift
+                ;;
             -h|--help)
                 show_help
                 exit 0
@@ -514,6 +668,12 @@ main() {
     echo "╔══════════════════════════════════════════════════════════╗"
     echo "║  WIZnet-PICO-C Docker Build System v${VERSION}               ║"
     echo "╚══════════════════════════════════════════════════════════╝"
+
+    # examples 초기화
+    if $INIT_EXAMPLES; then
+        init_examples
+        exit 0
+    fi
 
     # 빌드 정리
     if $CLEAN; then
@@ -545,8 +705,8 @@ main() {
     # Docker 확인
     check_docker
 
-    # 저장소 클론
-    clone_repo
+    # 저장소 클론 또는 사용자 프로젝트 검증
+    clone_or_validate_project
 
     # CMakeLists.txt 수정
     modify_cmakelists "$SELECTED_BOARD"

@@ -6,6 +6,204 @@
 [![Docker](https://img.shields.io/badge/docker-ready-blue)]()
 [![Platform](https://img.shields.io/badge/platform-linux%20%7C%20windows%20%7C%20macos-lightgrey)]()
 
+---
+
+## 🚀 빠른 시작 (Windows)
+
+### 1️⃣ 준비물 설치
+
+**필수 프로그램 2개만 설치:**
+
+1. **Docker Desktop**: https://www.docker.com/products/docker-desktop
+   - 다운로드 → 설치 → 재부팅
+   - 설치 후 Docker Desktop 실행 (시스템 트레이 확인)
+
+2. **Git for Windows**: https://git-scm.com/download/win
+   - 다운로드 → 설치 (기본 옵션 그대로)
+
+---
+
+### 2️⃣ 빌드 실행 (Copy & Paste)
+
+**PowerShell 또는 Git Bash 열고 아래 명령어 복사 후 실행:**
+
+```powershell
+git clone https://github.com/simryang/wiznet-pico-c-docker
+cd wiznet-pico-c-docker
+powershell -ExecutionPolicy Bypass -File .\build.ps1 -Interactive
+```
+
+> **💡 참고:** `powershell -ExecutionPolicy Bypass`는 스크립트 실행 권한 문제를 우회합니다.
+> 또는 PowerShell을 관리자 권한으로 열고 `Set-ExecutionPolicy RemoteSigned -Scope CurrentUser` 실행 후 `.\build.ps1 -Interactive`로 간단히 실행 가능합니다.
+
+**대화형 모드 진행 방법:**
+
+1. **보드 선택** 화면이 나오면:
+   - RP2040 보드: `1-6` 입력 → Enter
+   - RP2350 보드: `7-10` 입력 → Enter
+   - 권장: `3` (W5500-EVB-Pico)
+
+2. **예제 선택** 화면이 나오면:
+   - 전체 빌드: `0` 입력 → Enter
+   - 개별 예제: `1-16` 입력 → Enter (여러 개 가능: `3 7 12`)
+
+3. **빌드 설정 확인** 화면이 나오면:
+   - 계속 진행: `y` 입력 → Enter (또는 그냥 Enter)
+
+**이후 자동 진행:**
+- WIZnet-PICO-C 저장소 클론 (최초 1회)
+- 서브모듈 초기화 (pico-sdk, mbedtls 등)
+- Docker 빌드 실행
+- 완료 메시지 및 산출물 위치 안내
+
+---
+
+### 3️⃣ 완료!
+
+**산출물 위치:** `.\out\*.uf2`
+
+**소요 시간:**
+- 최초 빌드: 약 45초
+- 재빌드 (ccache): 약 6초 ⚡ (87% 개선!)
+
+**펌웨어 업로드 방법:**
+1. 보드를 USB로 연결
+2. BOOTSEL 버튼을 누른 채 RESET 버튼 클릭
+3. `.\out\*.uf2` 파일을 드래그앤드롭
+4. 시리얼 터미널로 로그 확인 (115200 baud)
+
+---
+
+## 💡 다음 빌드부터는
+
+### 간단 실행
+
+**자동 모드 (이전 설정 재사용):**
+```powershell
+.\build.ps1
+```
+
+**대화형 모드 (보드/예제 다시 선택):**
+```powershell
+.\build.ps1 -Interactive
+```
+
+### 주요 옵션
+
+**보드 및 예제 지정:**
+```powershell
+.\build.ps1 -Board W5500_EVB_PICO -All                # 전체 예제 빌드
+.\build.ps1 -Board W5500_EVB_PICO -Example http       # HTTP 예제만
+.\build.ps1 -Board W5500_EVB_PICO -Example http,mqtt  # 여러 예제
+```
+
+**빌드 타입:**
+```powershell
+.\build.ps1 -Debug          # 디버그 빌드 (디버깅 심볼 포함)
+```
+
+**정리 및 재빌드:**
+```powershell
+.\build.ps1 -Clean          # 이전 빌드 산출물 삭제 후 빌드
+```
+
+**도움말:**
+```powershell
+.\build.ps1 -Help
+```
+
+---
+
+## 🔧 예제 코드 수정하기
+
+예제 코드를 직접 수정하고 싶으신가요? 간단합니다!
+
+### Windows
+
+**1. examples 폴더를 호스트로 복사:**
+```powershell
+.\build.ps1 -InitExamples
+```
+
+**2. 예제 수정:**
+```powershell
+notepad .\examples\http\w5x00_http_server.c
+# 또는 Visual Studio Code로
+code .\examples\http\
+```
+
+**3. 빌드 (자동으로 수정된 examples 사용):**
+```powershell
+.\build.ps1 -Board W5500_EVB_PICO -All
+```
+
+### Linux / macOS
+
+**1. examples 폴더를 호스트로 복사:**
+```bash
+./build.sh --init-examples
+```
+
+**2. 예제 수정:**
+```bash
+vi ./examples/http/w5x00_http_server.c
+# 또는 VS Code로
+code ./examples/http/
+```
+
+**3. 빌드 (자동으로 수정된 examples 사용):**
+```bash
+./build.sh --board W5500_EVB_PICO --all
+```
+
+**이점:**
+- 서브모듈 관리 불필요
+- 예제 코드만 간편하게 수정
+- 빌드 시 자동으로 반영
+
+---
+
+## 🐧 Linux / macOS 사용자
+
+<details>
+<summary>클릭하여 확장</summary>
+
+### 빠른 시작
+
+```bash
+# 1. 저장소 클론
+git clone https://github.com/simryang/wiznet-pico-c-docker
+cd wiznet-pico-c-docker
+
+# 2. Interactive 빌드
+./build.sh -i
+
+# 3. 보드 선택 → 예제 선택 → 빌드 완료!
+```
+
+### 명령줄 사용법
+
+```bash
+# 전체 예제 빌드
+./build.sh --board W5500_EVB_PICO --all
+
+# 특정 예제만 빌드
+./build.sh --board W5500_EVB_PICO --example http
+
+# 여러 예제 빌드
+./build.sh --board W5500_EVB_PICO --example "http mqtt udp"
+
+# 디버그 빌드
+./build.sh --board W5500_EVB_PICO --example http --debug
+
+# 도움말
+./build.sh --help
+```
+
+</details>
+
+---
+
 ## ✨ 주요 특징
 
 - 🚀 **초고속 빌드**: tmpfs + ccache로 6초 완성 (재빌드 기준)
@@ -22,75 +220,6 @@
 | tmpfs 적용 | 33초 | 27% ↑ |
 | **tmpfs + ccache (재빌드)** | **6초** | **87% ↑** |
 
-## 🚀 빠른 시작
-
-### Linux / macOS
-
-```bash
-# 1. 저장소 클론
-git clone https://github.com/simryang/wiznet-pico-c-docker
-cd wiznet-pico-c-docker
-
-# 2. Interactive 빌드
-./build.sh -i
-
-# 3. 보드 선택 → 예제 선택 → 빌드 완료!
-```
-
-### Windows (PowerShell)
-
-```powershell
-# 1. 저장소 클론
-git clone https://github.com/simryang/wiznet-pico-c-docker
-cd wiznet-pico-c-docker
-
-# 2. Interactive 빌드
-.\build.ps1 -Interactive
-
-# 3. 보드 선택 → 예제 선택 → 빌드 완료!
-```
-
-## 📖 사용법
-
-### Interactive 모드 (권장)
-
-대화형 UI로 보드와 예제를 선택합니다.
-
-```bash
-./build.sh -i              # Linux/macOS
-.\build.ps1 -Interactive   # Windows
-```
-
-### 명령줄 모드
-
-빠른 빌드를 위한 명령줄 옵션:
-
-```bash
-# 전체 예제 빌드
-./build.sh --board W5500_EVB_PICO --all
-
-# 특정 예제만 빌드
-./build.sh --board W5500_EVB_PICO --example http
-
-# 여러 예제 빌드
-./build.sh --board W5500_EVB_PICO --example "http mqtt udp"
-
-# 디버그 빌드
-./build.sh --board W5500_EVB_PICO --example http --debug
-```
-
-### Windows (PowerShell)
-
-```powershell
-# 전체 예제 빌드
-.\build.ps1 -Board W5500_EVB_PICO -All
-
-# 특정 예제만 빌드
-.\build.ps1 -Board W5500_EVB_PICO -Example http
-
-# 여러 예제 빌드
-.\build.ps1 -Board W5500_EVB_PICO -Example http,mqtt,udp
-```
 
 ## 🎯 지원 하드웨어 (10종)
 
@@ -235,39 +364,117 @@ wiznet-pico-c-docker/
 
 ## 🐛 문제 해결
 
-### Docker 데몬이 실행되지 않음
+### Docker 관련
+
+**문제: "Docker 데몬이 실행되지 않았습니다"**
+
+**Windows:**
+1. Docker Desktop이 실행 중인지 확인 (시스템 트레이)
+2. Docker Desktop 재시작
+3. WSL2 백엔드가 활성화되어 있는지 확인
 
 **Linux:**
 ```bash
 sudo systemctl start docker
+sudo systemctl enable docker  # 부팅 시 자동 시작
 ```
 
-**Windows/macOS:**
+**macOS:**
 - Docker Desktop을 실행하세요
-- 작업 표시줄/메뉴바에서 Docker 아이콘 확인
+- 메뉴바에서 Docker 아이콘 확인
 
-### 빌드가 느림
+---
 
-1. **tmpfs가 활성화되었는지 확인**
+**문제: "permission denied while trying to connect to the Docker daemon socket"**
+
+**Linux:**
+```bash
+sudo usermod -aG docker $USER
+# 로그아웃 후 다시 로그인
+```
+
+---
+
+### PowerShell 실행 권한 오류
+
+**문제: "이 시스템에서 스크립트를 실행할 수 없으므로..."**
+
+**해결 방법 1 (일회성):**
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build.ps1 -Interactive
+```
+
+**해결 방법 2 (영구 설정):**
+```powershell
+# PowerShell을 관리자 권한으로 실행 후:
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# 이후 간단히 실행:
+.\build.ps1 -Interactive
+```
+
+---
+
+### 빌드 성능 개선
+
+**문제: 빌드가 너무 느림 (45초 이상)**
+
+**확인 사항:**
+
+1. **tmpfs 활성화 확인**
    ```bash
-   # 빌드 로그에서 다음 메시지 확인:
+   # 빌드 로그에서 확인:
    # [INFO]   tmpfs: 20g (RAM disk)
    ```
 
-2. **ccache가 동작하는지 확인**
+2. **ccache 동작 확인**
    ```bash
    # 재빌드 시 로그에서 확인:
    # Hits: 2249 / 2250 (99.96 %)
    ```
 
-3. **JOBS 값 조정**
+3. **병렬 빌드 수 조정**
    ```bash
-   export JOBS=8  # CPU 코어 수에 맞게 조정
+   # CPU 코어 수에 맞게 조정 (기본값: 16)
+   export JOBS=8
+   ./build.sh --board W5500_EVB_PICO --all
    ```
 
-### Windows에서 경로 오류
+   **Windows (PowerShell):**
+   ```powershell
+   $env:JOBS=8
+   .\build.ps1 -Board W5500_EVB_PICO -All
+   ```
 
-PowerShell을 **관리자 권한**으로 실행하세요.
+---
+
+### 서브모듈 오류
+
+**문제: "Pico SDK 서브모듈이 초기화되지 않았습니다!"**
+
+**해결:**
+```bash
+cd WIZnet-PICO-C
+git submodule update --init --recursive
+cd ..
+```
+
+---
+
+### Windows 경로 오류
+
+**문제: "C:\Users\... 경로를 찾을 수 없습니다"**
+
+**해결:**
+- PowerShell을 **관리자 권한**으로 실행
+- 또는 경로에 공백이 없는지 확인
+
+---
+
+### 추가 도움이 필요하신가요?
+
+- **GitHub Issues**: [이슈 등록](https://github.com/simryang/wiznet-pico-c-docker/issues)
+- **WIZnet 공식 포럼**: https://forum.wiznet.io/
 
 ## 📚 참고 자료
 
