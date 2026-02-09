@@ -526,7 +526,14 @@ function Invoke-DockerBuild {
     $absProjectDir = ConvertTo-WSLPath (Resolve-Path $ProjectDir).Path
     $absOutDir = ConvertTo-WSLPath (Resolve-Path $OutDir).Path
     $absCcacheDir = ConvertTo-WSLPath (Resolve-Path $CcacheDirHost).Path
-    $absDockerBuildSh = ConvertTo-WSLPath (Resolve-Path "docker-build.sh").Path
+
+    # docker-build.sh는 스크립트와 같은 디렉토리에 있어야 함
+    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+    $dockerBuildShPath = Join-Path $scriptDir "docker-build.sh"
+    if (-not (Test-Path $dockerBuildShPath)) {
+        Write-Error-Custom "docker-build.sh를 찾을 수 없습니다: $dockerBuildShPath"
+    }
+    $absDockerBuildSh = ConvertTo-WSLPath (Resolve-Path $dockerBuildShPath).Path
 
     # 호스트 examples 마운트 설정
     $examplesMount = @()
@@ -540,6 +547,7 @@ function Invoke-DockerBuild {
     Write-Log "  소스: $absProjectDir"
     Write-Log "  산출물: $absOutDir"
     Write-Log "  ccache: $absCcacheDir"
+    Write-Log "  빌드 스크립트: $absDockerBuildSh"
     Write-Log "  tmpfs: $TmpfsSize (RAM disk)"
 
     # 시작 시간 기록
@@ -564,6 +572,7 @@ function Invoke-DockerBuild {
     )
 
     & docker $dockerArgs
+    $dockerExitCode = $LASTEXITCODE
 
     # 종료 시간 계산
     $endTime = Get-Date
@@ -571,14 +580,44 @@ function Invoke-DockerBuild {
     $minutes = [int]$elapsed.TotalMinutes
     $seconds = [int]$elapsed.Seconds
 
+    # Docker 빌드 실패 확인
+    if ($dockerExitCode -ne 0) {
+        Write-Host ""
+        Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Red
+        Write-Host "❌ Docker 빌드 실패! (종료 코드: $dockerExitCode)" -ForegroundColor Red
+        Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Red
+        Write-Host ""
+        Write-Error-Custom "빌드가 실패했습니다. 위의 로그를 확인하세요."
+    }
+
+    # 산출물 확인
+    $uf2Files = Get-ChildItem "$OutDir\*.uf2" -ErrorAction SilentlyContinue
+    if ($uf2Files.Count -eq 0) {
+        Write-Host ""
+        Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Red
+        Write-Host "❌ 빌드 산출물이 생성되지 않았습니다!" -ForegroundColor Red
+        Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "디버그 정보:" -ForegroundColor Yellow
+        Write-Host "  산출물 디렉토리: $OutDir"
+        Write-Host "  WSL 경로: $absOutDir"
+        Write-Host "  디렉토리 존재: $(Test-Path $OutDir)"
+        Write-Host "  디렉토리 내용:"
+        Get-ChildItem $OutDir -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host "    $($_.Name)"
+        }
+        Write-Host ""
+        Write-Error-Custom "빌드는 완료되었으나 .uf2 파일이 생성되지 않았습니다."
+    }
+
     Write-Host ""
     Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Green
     Write-Host "✅ 빌드 성공! (소요 시간: ${minutes}분 ${seconds}초)" -ForegroundColor Green
     Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Green
     Write-Host ""
     Write-Host "생성된 파일:"
-    Get-ChildItem "$OutDir\*.uf2" -ErrorAction SilentlyContinue | ForEach-Object {
-        Write-Host "  $($_.Name) ($([math]::Round($_.Length / 1KB))K)"
+    $uf2Files | ForEach-Object {
+        Write-Host "  $($_.Name) ($([math]::Round($_.Length / 1KB))K)" -ForegroundColor Cyan
     }
     Write-Host ""
     Write-Host "산출물 위치: $(Resolve-Path $OutDir)"
