@@ -522,10 +522,10 @@ function Invoke-DockerBuild {
     New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
     New-Item -ItemType Directory -Force -Path $CcacheDirHost | Out-Null
 
-    # 절대 경로 변환 (Windows 경로를 WSL 경로로 변환)
-    $absProjectDir = ConvertTo-WSLPath (Resolve-Path $ProjectDir).Path
-    $absOutDir = ConvertTo-WSLPath (Resolve-Path $OutDir).Path
-    $absCcacheDir = ConvertTo-WSLPath (Resolve-Path $CcacheDirHost).Path
+    # 절대 경로 변환 (Docker Desktop for Windows는 Windows 경로를 직접 사용)
+    $absProjectDir = (Resolve-Path $ProjectDir).Path
+    $absOutDir = (Resolve-Path $OutDir).Path
+    $absCcacheDir = (Resolve-Path $CcacheDirHost).Path
 
     # docker-build.sh는 스크립트와 같은 디렉토리에 있어야 함
     $dockerBuildShPath = Join-Path $PSScriptRoot "docker-build.sh"
@@ -547,12 +547,12 @@ function Invoke-DockerBuild {
     }
 
     Write-Log "docker-build.sh 확인 완료 (크기: $fileSize bytes)"
-    $absDockerBuildSh = ConvertTo-WSLPath (Resolve-Path $dockerBuildShPath).Path
+    $absDockerBuildSh = (Resolve-Path $dockerBuildShPath).Path
 
     # 호스트 examples 마운트 설정
     $examplesMount = @()
     if (Test-Path $ExamplesDir) {
-        $absExamplesDir = ConvertTo-WSLPath (Resolve-Path $ExamplesDir).Path
+        $absExamplesDir = (Resolve-Path $ExamplesDir).Path
         $examplesMount = @("-v", "${absExamplesDir}:/work/src/examples:rw")
         Write-Log "호스트 examples 사용: $absExamplesDir"
     }
