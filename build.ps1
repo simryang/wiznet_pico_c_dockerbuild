@@ -528,8 +528,7 @@ function Invoke-DockerBuild {
     $absCcacheDir = ConvertTo-WSLPath (Resolve-Path $CcacheDirHost).Path
 
     # docker-build.sh는 스크립트와 같은 디렉토리에 있어야 함
-    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-    $dockerBuildShPath = Join-Path $scriptDir "docker-build.sh"
+    $dockerBuildShPath = Join-Path $PSScriptRoot "docker-build.sh"
     if (-not (Test-Path $dockerBuildShPath)) {
         Write-Error-Custom "docker-build.sh를 찾을 수 없습니다: $dockerBuildShPath"
     }
