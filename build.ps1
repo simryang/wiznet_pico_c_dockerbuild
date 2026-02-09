@@ -529,9 +529,24 @@ function Invoke-DockerBuild {
 
     # docker-build.sh는 스크립트와 같은 디렉토리에 있어야 함
     $dockerBuildShPath = Join-Path $PSScriptRoot "docker-build.sh"
+
+    # 파일 존재 및 타입 검증
     if (-not (Test-Path $dockerBuildShPath)) {
         Write-Error-Custom "docker-build.sh를 찾을 수 없습니다: $dockerBuildShPath"
     }
+
+    # 디렉토리가 아닌 파일인지 확인
+    if ((Get-Item $dockerBuildShPath) -is [System.IO.DirectoryInfo]) {
+        Write-Error-Custom "docker-build.sh가 파일이 아니라 디렉토리입니다: $dockerBuildShPath"
+    }
+
+    # 파일 크기 확인 (비어있지 않은지)
+    $fileSize = (Get-Item $dockerBuildShPath).Length
+    if ($fileSize -eq 0) {
+        Write-Error-Custom "docker-build.sh 파일이 비어있습니다: $dockerBuildShPath"
+    }
+
+    Write-Log "docker-build.sh 확인 완료 (크기: $fileSize bytes)"
     $absDockerBuildSh = ConvertTo-WSLPath (Resolve-Path $dockerBuildShPath).Path
 
     # 호스트 examples 마운트 설정
