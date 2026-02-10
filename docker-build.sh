@@ -124,8 +124,8 @@ if [ -n "${EXAMPLES:-}" ]; then
       tcp_client_over_ssl) targets="wizchip_tcp_client_over_ssl" ;;
       tcp_server_over_ssl) targets="wizchip_tcp_server_over_ssl" ;;
       tcp_server_multi_socket) targets="wizchip_tcp_server_multi_socket" ;;
-      udp_multicast) targets="wizchip_udp_multicast_receiver wizchip_udp_multicast_sender" ;;
-      can) targets="wizchip_can_loopback wizchip_can_utils wizchip_can_web_config wizchip_can_to_eth_tcpc wizchip_can_to_eth_tcps" ;;
+      udp_multicast) targets="wizchip_udp_multicast_receiver" ;;
+      can) targets="wizchip_can_loopback wizchip_can_web_config wizchip_can_utils" ;;
       network_install) targets="wizchip_network_install" ;;
       *) die "Unknown example: $example" ;;
     esac
