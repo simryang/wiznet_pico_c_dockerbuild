@@ -576,6 +576,19 @@ function Invoke-DockerBuild {
         "-v", "${absDockerBuildSh}:/docker-build.sh:ro"
     )
     $dockerArgs += $examplesMount
+
+    # 빌드할 예제 목록 전달
+    $examplesEnv = @()
+    if ($ExampleList -and $ExampleList.Count -gt 0) {
+        $examplesStr = $ExampleList -join ' '
+        $examplesEnv = @("-e", "EXAMPLES=$examplesStr")
+        Write-Log "선택한 예제: $examplesStr"
+    }
+    else {
+        Write-Log "전체 예제 빌드"
+    }
+
+    $dockerArgs += $examplesEnv
     $dockerArgs += @(
         "--tmpfs", "/work/src/build:rw,exec,size=$TmpfsSize",
         "-e", "CCACHE_DIR=/work/.ccache",

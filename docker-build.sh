@@ -104,7 +104,42 @@ cmake -S /work/src -B /work/src/build -G Ninja \
 
 # Build
 log "Building with ninja (-j $JOBS)..."
-cmake --build /work/src/build -- -j "$JOBS"
+
+# 특정 예제만 빌드 (EXAMPLES 환경변수 사용)
+if [ -n "${EXAMPLES:-}" ]; then
+  log "Building specific examples: $EXAMPLES"
+  for example in $EXAMPLES; do
+    # 예제 이름 → 타겟 이름 변환
+    case "$example" in
+      http) targets="wizchip_http_server" ;;
+      loopback) targets="wizchip_loopback" ;;
+      udp) targets="wizchip_udp_client wizchip_udp_server" ;;
+      dhcp_dns) targets="wizchip_dhcp_dns" ;;
+      sntp) targets="wizchip_sntp" ;;
+      mqtt) targets="wizchip_mqtt_publish wizchip_mqtt_publish_subscribe wizchip_mqtt_subscribe" ;;
+      tftp) targets="wizchip_tftp_client" ;;
+      netbios) targets="wizchip_netbios" ;;
+      pppoe) targets="wizchip_pppoe" ;;
+      upnp) targets="wizchip_upnp" ;;
+      tcp_client_over_ssl) targets="wizchip_tcp_client_over_ssl" ;;
+      tcp_server_over_ssl) targets="wizchip_tcp_server_over_ssl" ;;
+      tcp_server_multi_socket) targets="wizchip_tcp_server_multi_socket" ;;
+      udp_multicast) targets="wizchip_udp_multicast_receiver wizchip_udp_multicast_sender" ;;
+      can) targets="wizchip_can_loopback wizchip_can_utils wizchip_can_web_config wizchip_can_to_eth_tcpc wizchip_can_to_eth_tcps" ;;
+      network_install) targets="wizchip_network_install" ;;
+      *) die "Unknown example: $example" ;;
+    esac
+
+    for target in $targets; do
+      log "Building target: $target"
+      cmake --build /work/src/build --target "$target" -- -j "$JOBS"
+    done
+  done
+else
+  # 전체 빌드
+  log "Building all examples"
+  cmake --build /work/src/build -- -j "$JOBS"
+fi
 
 # tmpfs 모니터 종료
 kill "$MPID" >/dev/null 2>&1 || true
