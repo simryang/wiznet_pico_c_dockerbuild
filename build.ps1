@@ -38,9 +38,13 @@ param(
     [Alias("d")]
     [switch]$DebugBuild,
 
-    [Parameter(HelpMessage="빌드 정리")]
+    [Parameter(HelpMessage="빌드 정리 (전체)")]
     [Alias("c")]
     [switch]$Clean,
+
+    [Parameter(HelpMessage="산출물만 정리 (out 폴더만 삭제)")]
+    [Alias("co")]
+    [switch]$CleanOutput,
 
     [Parameter(HelpMessage="examples 폴더를 호스트로 복사")]
     [switch]$InitExamples,
@@ -191,7 +195,8 @@ WIZnet-PICO-C Docker Build System v$Version
     -Example, -e EXAMPLE          예제 지정 (예: http)
     -All, -a                      전체 예제 빌드 (16개)
     -DebugBuild, -d               디버그 빌드 (기본: Release)
-    -Clean, -c                    빌드 정리
+    -CleanOutput, -co             산출물만 정리 (빠른 재빌드)
+    -Clean, -c                    전체 정리 (빌드 캐시 포함)
     -InitExamples                 examples 폴더를 호스트로 복사 (최초 1회)
 
   도움말:
@@ -218,7 +223,10 @@ WIZnet-PICO-C Docker Build System v$Version
   # (.\examples\http\ 등을 수정)
   .\build.ps1 -b W5500_EVB_PICO -a  # 수정된 examples로 빌드
 
-  # 빌드 정리
+  # 산출물만 정리 (빠른 재빌드)
+  .\build.ps1 -co
+
+  # 전체 정리 (빌드 캐시 포함)
   .\build.ps1 -c
 
 지원 보드 (10종):
@@ -705,8 +713,23 @@ function Initialize-Examples {
 }
 
 # 빌드 정리
+function Clear-Output {
+    Write-Log "산출물 정리 중..."
+
+    if (Test-Path $OutDir) {
+        $fileCount = (Get-ChildItem $OutDir -File).Count
+        Remove-Item -Recurse -Force $OutDir
+        Write-Log "제거: $OutDir ($fileCount 파일)"
+    }
+    else {
+        Write-Log "산출물 디렉토리 없음: $OutDir"
+    }
+
+    Write-Log "산출물 정리 완료 (빌드 캐시는 유지 → 빠른 재빌드)"
+}
+
 function Clear-Build {
-    Write-Log "빌드 정리 중..."
+    Write-Log "빌드 정리 중 (전체)..."
 
     if (Test-Path "$ProjectDir\build") {
         Remove-Item -Recurse -Force "$ProjectDir\build"
@@ -732,7 +755,7 @@ function Clear-Build {
         }
     }
 
-    Write-Log "빌드 정리 완료"
+    Write-Log "빌드 정리 완료 (전체)"
 }
 
 # 메인 로직
@@ -755,7 +778,13 @@ function Main {
         exit 0
     }
 
-    # 빌드 정리
+    # 산출물만 정리
+    if ($CleanOutput) {
+        Clear-Output
+        exit 0
+    }
+
+    # 빌드 정리 (전체)
     if ($Clean) {
         Clear-Build
         exit 0
