@@ -122,7 +122,8 @@ WIZnet-PICO-C Docker Build System v${VERSION}
     -e, --example EXAMPLE          예제 지정 (예: http)
     -a, --all                      전체 예제 빌드 (16개)
     -d, --debug                    디버그 빌드 (기본: Release)
-    -c, --clean                    빌드 정리
+    -c, --clean                    빌드 정리 (전체)
+    -co, --clean-output            산출물만 정리 (빌드 캐시 유지 → 빠른 재빌드)
     --init-examples                examples 폴더를 호스트로 복사 (최초 1회)
 
   도움말:
@@ -150,7 +151,8 @@ WIZnet-PICO-C Docker Build System v${VERSION}
   ./build.sh -b W5500_EVB_PICO -a  # 수정된 examples로 빌드
 
   # 빌드 정리
-  ./build.sh -c
+  ./build.sh -c                      # 전체 정리 (빌드 캐시 포함)
+  ./build.sh -co                     # 산출물만 정리 (빌드 캐시 유지)
 
 지원 보드 (10종):
   WIZnet_Ethernet_HAT, W5100S_EVB_PICO, W5500_EVB_PICO,
@@ -468,42 +470,30 @@ run_docker_build() {
     # docker-build.sh 절대 경로
     local abs_docker_build_sh=$(cd "$(dirname "$0")" && pwd)/docker-build.sh
 
-    if $BUILD_ALL; then
-        # 전체 빌드 (성능 최적화: tmpfs + ccache)
-        docker run --rm \
-            -v "$abs_project_dir:/work/src:rw" \
-            -v "$abs_out_dir:/work/out:rw" \
-            -v "$abs_ccache_dir:/work/.ccache:rw" \
-            -v "$abs_docker_build_sh:/docker-build.sh:ro" \
-            $examples_mount \
-            --tmpfs /work/src/build:rw,exec,size="$TMPFS_SIZE" \
-            -e "CCACHE_DIR=/work/.ccache" \
-            -e "JOBS=$JOBS" \
-            -e "BUILD_TYPE=$BUILD_TYPE" \
-            "$DOCKER_IMAGE" \
-            bash /docker-build.sh
+    # 빌드할 예제 목록 전달
+    local examples_env=""
+    if ! $BUILD_ALL && [ ${#examples[@]} -gt 0 ]; then
+        local examples_str="${examples[*]}"
+        examples_env="-e EXAMPLES=$examples_str"
+        log "선택한 예제: $examples_str"
     else
-        # 개별 예제 빌드 (전체 빌드 후 필터링)
-        log "개별 예제 빌드는 전체 빌드 후 필터링합니다..."
-        docker run --rm \
-            -v "$abs_project_dir:/work/src:rw" \
-            -v "$abs_out_dir:/work/out:rw" \
-            -v "$abs_ccache_dir:/work/.ccache:rw" \
-            -v "$abs_docker_build_sh:/docker-build.sh:ro" \
-            $examples_mount \
-            --tmpfs /work/src/build:rw,exec,size="$TMPFS_SIZE" \
-            -e "CCACHE_DIR=/work/.ccache" \
-            -e "JOBS=$JOBS" \
-            -e "BUILD_TYPE=$BUILD_TYPE" \
-            "$DOCKER_IMAGE" \
-            bash /docker-build.sh
-
-        # 선택한 예제의 산출물만 필터링
-        log "선택한 예제의 산출물만 필터링 중..."
-        for example in "${examples[@]}"; do
-            find "$abs_out_dir" -name "*${example}*.uf2" -o -name "*${example}*.elf"
-        done | sort | uniq
+        log "전체 예제 빌드"
     fi
+
+    # Docker 빌드 실행
+    docker run --rm \
+        -v "$abs_project_dir:/work/src:rw" \
+        -v "$abs_out_dir:/work/out:rw" \
+        -v "$abs_ccache_dir:/work/.ccache:rw" \
+        -v "$abs_docker_build_sh:/docker-build.sh:ro" \
+        $examples_mount \
+        $examples_env \
+        --tmpfs /work/src/build:rw,exec,size="$TMPFS_SIZE" \
+        -e "CCACHE_DIR=/work/.ccache" \
+        -e "JOBS=$JOBS" \
+        -e "BUILD_TYPE=$BUILD_TYPE" \
+        "$DOCKER_IMAGE" \
+        bash /docker-build.sh
 
     # 종료 시간 계산
     local end_time=$(date +%s)
@@ -577,8 +567,22 @@ init_examples() {
 }
 
 # 빌드 정리
+clean_output() {
+    log "산출물 정리 중..."
+
+    if [ -d "$OUT_DIR" ]; then
+        local file_count=$(find "$OUT_DIR" -type f | wc -l)
+        rm -rf "$OUT_DIR"
+        log "제거: $OUT_DIR ($file_count 파일)"
+    else
+        log "산출물 디렉토리 없음: $OUT_DIR"
+    fi
+
+    log "산출물 정리 완료 (빌드 캐시는 유지 → 빠른 재빌드)"
+}
+
 clean_build() {
-    log "빌드 정리 중..."
+    log "빌드 정리 중 (전체)..."
 
     if [ -d "$PROJECT_DIR/build" ]; then
         rm -rf "$PROJECT_DIR/build"
@@ -604,7 +608,7 @@ clean_build() {
         fi
     fi
 
-    log "빌드 정리 완료"
+    log "빌드 정리 완료 (전체)"
 }
 
 # 메인 로직
@@ -615,6 +619,7 @@ main() {
     SELECTED_EXAMPLES=()
     BUILD_ALL=false
     CLEAN=false
+    CLEAN_OUTPUT=false
     USER_PROJECT=""
     INIT_EXAMPLES=false
 
@@ -649,6 +654,10 @@ main() {
                 CLEAN=true
                 shift
                 ;;
+            -co|--clean-output)
+                CLEAN_OUTPUT=true
+                shift
+                ;;
             --init-examples)
                 INIT_EXAMPLES=true
                 shift
@@ -678,6 +687,12 @@ main() {
     # 빌드 정리
     if $CLEAN; then
         clean_build
+        exit 0
+    fi
+
+    # 산출물만 정리
+    if $CLEAN_OUTPUT; then
+        clean_output
         exit 0
     fi
 
